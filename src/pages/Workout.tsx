@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { format, addDays, subDays } from "date-fns";
 import { workoutSchedule } from "../data/initialData";
+import { saveDailyLog, getDailyLog } from "../services/db";
 import { CheckCircle, Circle, Clock, BarChart, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function Workout() {
@@ -20,10 +21,17 @@ export default function Workout() {
     schedule.exercises.map((ex) => ({ ...ex, completed: false, setsCompleted: 0 }))
   );
 
-  // Update exercises when the selected date (and thus schedule) changes
+  // Update exercises when the selected date changs
   useEffect(() => {
-     setExercises(schedule.exercises.map((ex) => ({ ...ex, completed: false, setsCompleted: 0 })));
-  }, [selectedDate]);
+     const defaultExercises = schedule.exercises.map((ex) => ({ ...ex, completed: false, setsCompleted: 0 }));
+     setExercises(defaultExercises);
+
+     getDailyLog(selectedDate).then((data) => {
+         if (data && data.workout) {
+             setExercises(data.workout);
+         }
+     });
+  }, [selectedDate, currentDay]); // Add currentDay dependency to ensure schedule update triggers fetch
 
   const handlePrevDay = () => setSelectedDate((prev) => subDays(prev, 1));
   const handleNextDay = () => setSelectedDate((prev) => addDays(prev, 1));
@@ -34,6 +42,7 @@ export default function Workout() {
       // simplified logic: simple toggle complete/incomplete for the whole exercise
       ex.completed = !ex.completed;
       setExercises(newExercises);
+      saveDailyLog(selectedDate, 'workout', newExercises);
   };
 
   return (

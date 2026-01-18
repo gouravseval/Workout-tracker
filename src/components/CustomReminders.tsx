@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { saveRemindersToDB, getRemindersFromDB } from "../services/db";
 import { Bell, Plus, Trash2, Clock } from "lucide-react";
 
 interface Reminder {
@@ -14,6 +15,18 @@ export default function CustomReminders() {
     { id: 1, title: "Creatine", time: "20:30", frequency: "Daily", active: true },
     { id: 2, title: "Submit Photos", time: "09:00", frequency: "Weekly", active: false }
   ]);
+
+  // Load from DB on mount
+  useEffect(() => {
+    getRemindersFromDB().then((data) => {
+        if (data) setReminders(data);
+    });
+  }, []);
+
+  // Save to DB whenever reminders change
+  useEffect(() => {
+      saveRemindersToDB(reminders);
+  }, [reminders]);
   
   const [isAdding, setIsAdding] = useState(false);
   const [newTitle, setNewTitle] = useState("");

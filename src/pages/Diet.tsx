@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format, addDays, subDays } from "date-fns";
 import { dietPlan } from "../data/initialData";
+import { saveDailyLog, getDailyLog } from "../services/db";
 import ChatInterface from "../components/ChatInterface";
 import { RefreshCw, CheckCircle, Circle, ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -13,18 +14,27 @@ export default function Diet() {
     dietPlan.map((m) => ({ ...m, completed: false, spun: false }))
   );
 
-  // Reset meals when date changes
-  // In a real app with backend, this useEffect would fetch the log for selectedDate
-  /* useEffect(() => {
-       // fetchMeals(selectedDate).then(setMeals)
-       // For this demo:
-       setMeals(dietPlan.map((m) => ({ ...m, completed: false, spun: false })));
-  }, [selectedDate]); */
+  // Reset meals when date changes and try to fetch from DB
+  useEffect(() => {
+    // 1. Reset to default first
+    const defaultState = dietPlan.map((m) => ({ ...m, completed: false, spun: false }));
+    setMeals(defaultState);
+
+    // 2. Fetch from Cloud
+    getDailyLog(selectedDate).then((data) => {
+        if (data && data.diet) {
+            // Merge cloud data with default plan
+            // We trust the cloud data for 'completed' and 'items' if they exist
+            setMeals(data.diet);
+        }
+    });
+  }, [selectedDate]);
 
   const toggleMeal = (index: number) => {
     const newMeals = [...meals];
     newMeals[index].completed = !newMeals[index].completed;
     setMeals(newMeals);
+    saveDailyLog(selectedDate, 'diet', newMeals);
   };
 
   const spinMeal = (index: number) => {
@@ -42,6 +52,7 @@ export default function Diet() {
     newMeals[index].items = [random]; // Replace items
     newMeals[index].spun = true;
     setMeals(newMeals);
+    saveDailyLog(selectedDate, 'diet', newMeals);
   };
 
   const totalCalories = meals.reduce((acc, m) => acc + m.calories, 0);

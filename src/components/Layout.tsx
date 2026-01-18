@@ -17,9 +17,12 @@ export default function Layout() {
     <div className="min-h-screen pb-20 md:pb-0 md:pl-64">
       {/* Desktop Sidebar (Hidden on mobile) */}
       <nav className="hidden md:flex flex-col fixed left-0 top-0 h-full w-64 glass-panel border-r border-gray-800 z-50 p-6">
-        <h1 className="text-2xl font-bold text-white mb-10 tracking-tight">
-          FitTrack Pro
-        </h1>
+        <div className="mb-10 flex items-center gap-3 px-2">
+            <img src="/logo.png" alt="VantaTrack" className="w-10 h-10 rounded-full" />
+            <h1 className="text-2xl font-bold text-white tracking-tight">
+              VantaTrack
+            </h1>
+        </div>
         <div className="flex flex-col gap-4">
           {navItems.map((item) => (
             <Link
