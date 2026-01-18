@@ -102,11 +102,23 @@ export default function Workout() {
               >
                   <div className="flex items-start gap-4 flex-1">
                       {/* Exercise Photo (Placeholder) */}
-                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-800 shrink-0 border border-white/10">
+                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-800 shrink-0 border border-white/10 flex items-center justify-center">
                           <img 
                             src={`${getExerciseImage(ex.name)}?v=2`} 
                             alt={ex.name}
                             className="w-full h-full object-cover p-2"
+                            onError={(e) => {
+                                // Fallback to letter if image fails to load
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const parent = target.parentElement;
+                                if (parent && !parent.querySelector('.fallback-letter')) {
+                                    const letter = document.createElement('span');
+                                    letter.className = 'fallback-letter text-2xl font-bold text-white';
+                                    letter.textContent = ex.name.charAt(0);
+                                    parent.appendChild(letter);
+                                }
+                            }}
                           />
                       </div>
                       

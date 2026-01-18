@@ -40,6 +40,31 @@ export default function Calendar() {
       return workoutSchedule[dayName] || workoutSchedule["Monday"];
   };
 
+  // Image mapping helper - same as in Workout.tsx
+  const getExerciseImage = (name: string) => {
+      const n = name.toLowerCase();
+      
+      // Specific Variations
+      if (n.includes("fly")) return "/exercises/fly.png";
+      if (n.includes("lunge") || n.includes("split")) return "/exercises/lunge.png";
+      if (n.includes("calf")) return "/exercises/calf.png";
+      if (n.includes("dip")) return "/exercises/dip.png";
+      if (n.includes("shrug")) return "/exercises/shrug.png";
+
+      // General Categories
+      if (n.includes("press") || n.includes("push") || n.includes("chest") || n.includes("skull")) return "/exercises/press.png";
+      if (n.includes("pull") || n.includes("lat") || n.includes("chin")) return "/exercises/pull.png";
+      if (n.includes("row")) return "/exercises/row.png";
+      if (n.includes("squat") || n.includes("leg press")) return "/exercises/squat.png";
+      if (n.includes("deadlift") || n.includes("rdl") || n.includes("hyperextension")) return "/exercises/hinge.png";
+      if (n.includes("curl")) return "/exercises/curl.png";
+      if (n.includes("extension") || n.includes("rope")) return "/exercises/extension.png";
+      if (n.includes("raise") || n.includes("face")) return "/exercises/raise.png";
+      if (n.includes("plank") || n.includes("crunch") || n.includes("situp") || n.includes("twist") || n.includes("leg") || n.includes("walk")) return "/exercises/core.png";
+      
+      return "/exercises/press.png"; // Fallback
+  };
+
   const handleDayClick = (date: Date) => {
     setSelectedDate(date);
     setIsModalOpen(true);
@@ -153,11 +178,23 @@ export default function Calendar() {
                     
                     {getWorkoutForDate(selectedDate).exercises.map((ex: any, idx: number) => (
                         <div key={idx} className="bg-white/5 rounded-xl p-4 flex gap-4 items-start">
-                             <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-800 shrink-0 border border-white/10">
+                             <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-800 shrink-0 border border-white/10 flex items-center justify-center">
                                 <img 
-                                    src={`https://placehold.co/100x100/1e293b/white?text=${ex.name.charAt(0)}`}
+                                    src={`${getExerciseImage(ex.name)}?v=2`}
                                     alt={ex.name}
-                                    className="w-full h-full object-cover opacity-80"
+                                    className="w-full h-full object-cover p-2"
+                                    onError={(e) => {
+                                        // Fallback to letter if image fails to load
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
+                                        const parent = target.parentElement;
+                                        if (parent && !parent.querySelector('.fallback-letter')) {
+                                            const letter = document.createElement('span');
+                                            letter.className = 'fallback-letter text-2xl font-bold text-white';
+                                            letter.textContent = ex.name.charAt(0);
+                                            parent.appendChild(letter);
+                                        }
+                                    }}
                                 />
                             </div>
                             <div className="flex-1">
