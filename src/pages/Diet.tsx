@@ -2,12 +2,16 @@ import { useState, useEffect } from "react";
 import { format, addDays, subDays } from "date-fns";
 import { dietPlan } from "../data/initialData";
 import { saveDailyLog, getDailyLog } from "../services/db";
+import { getAlternativeMeal } from "../services/gemini";
 import ChatInterface from "../components/ChatInterface";
 import { RefreshCw, CheckCircle, Circle, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function Diet() {
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  // Start from TOMORROW as per user request
+  const [selectedDate, setSelectedDate] = useState(() => addDays(new Date(), 1));
   
+  const [loadingMeal, setLoadingMeal] = useState<number | null>(null);
+
   // NOTE: In a real app, 'meals' data would be fetched based on 'selectedDate'. 
   // For now, we reset the completion status when date changes, but keep the same plan.
   const [meals, setMeals] = useState(
@@ -37,26 +41,23 @@ export default function Diet() {
     saveDailyLog(selectedDate, 'diet', newMeals);
   };
 
-  const spinMeal = (index: number) => {
-    // A simple mock shuffle for now. In a real app, this would query a DB of healthy alternatives.
-    const alternatives = [
-      "Quinoa Salad with Chickpeas",
-      "Greek Yogurt Parfait",
-      "Lentil Soup with Brown Rice",
-      "Tofu Stir-fry with Veggies",
-      "Oatmeal with Almond Butter"
-    ];
-    const random = alternatives[Math.floor(Math.random() * alternatives.length)];
+  const spinMeal = async (index: number) => {
+    setLoadingMeal(index);
+    const original = meals[index];
     
-    const newMeals = [...meals];
-    newMeals[index].items = [random]; // Replace items
-    newMeals[index].spun = true;
-    setMeals(newMeals);
-    saveDailyLog(selectedDate, 'diet', newMeals);
+    // AI Shuffle
+    const alternative = await getAlternativeMeal(original.meal, original.items);
+    
+    if (alternative) {
+        const newMeals = [...meals];
+        newMeals[index].items = [alternative]; 
+        newMeals[index].spun = true;
+        setMeals(newMeals);
+        saveDailyLog(selectedDate, 'diet', newMeals);
+    }
+    setLoadingMeal(null);
   };
 
-  const totalCalories = meals.reduce((acc, m) => acc + m.calories, 0);
-  const consumedCalories = meals.filter(m => m.completed).reduce((acc, m) => acc + m.calories, 0);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -78,12 +79,7 @@ export default function Diet() {
             </div>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold text-blue-400">
-              {consumedCalories} / {totalCalories}
-            </div>
-            <div className="text-xs text-gray-500 uppercase tracking-wider">
-              kcal Consumed
-            </div>
+             {/* Only Day Navigation Logic Here */}
           </div>
         </header>
 
@@ -99,10 +95,7 @@ export default function Diet() {
                 <div className="flex justify-between mb-2">
                   <h3 className="font-bold text-lg text-white">{meal.meal}</h3>
                   <div className="flex gap-4 text-xs font-mono text-gray-400 mt-1">
-                    <span>{meal.calories} kcal</span>
-                    <span className="text-gray-300">{meal.protein}g P</span>
-                    <span className="text-gray-500">{meal.carbs}g C</span>
-                    <span className="text-gray-500">{meal.fats}g F</span>
+                    {/* Macros hidden as per user request */}
                   </div>
                 </div>
                 <ul className="text-sm text-gray-300 list-disc list-inside">
@@ -115,8 +108,11 @@ export default function Diet() {
               <div className="flex items-center gap-3 justify-end md:border-l border-white/10 md:pl-4">
                 <button
                   onClick={() => spinMeal(idx)}
-                  className="p-2 text-blue-400 hover:bg-blue-400/10 rounded-full"
-                  title="Shuffle Meal"
+                  disabled={loadingMeal === idx}
+                  className={`p-2 rounded-full transition-all ${
+                      loadingMeal === idx ? "bg-blue-500/20 text-blue-400 animate-spin" : "text-blue-400 hover:bg-blue-400/10"
+                  }`}
+                  title="Shuffle Meal with AI"
                 >
                   <RefreshCw size={20} />
                 </button>

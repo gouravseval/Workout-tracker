@@ -1,5 +1,6 @@
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { auth, db } from "./firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { auth, db, storage } from "./firebase";
 import { format } from "date-fns";
 
 // Helper to get current user ID
@@ -42,7 +43,7 @@ export const getRemindersFromDB = async () => {
 
 export const saveDailyLog = async (
   date: Date,
-  type: "diet" | "workout",
+  type: "diet" | "workout" | "water",
   data: any,
 ) => {
   const uid = getUserId();
@@ -76,4 +77,81 @@ export const getDailyLog = async (date: Date) => {
     console.error("Error fetching daily log:", e);
   }
   return null;
+};
+
+// --- Photos ---
+
+export const uploadWeeklyPhoto = async (file: File, weekLabel: string) => {
+  const uid = getUserId();
+  if (!uid) return null;
+
+  try {
+    // Path: users/{uid}/photos/{weekLabel}
+    const storageRef = ref(storage, `users/${uid}/photos/${weekLabel}`);
+    await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(storageRef);
+
+    // Save metadata to Firestore
+    await setDoc(
+      doc(db, "users", uid, "photos", weekLabel),
+      {
+        url: downloadURL,
+        date: new Date().toISOString(),
+      },
+      { merge: true },
+    );
+
+    return downloadURL;
+  } catch (e) {
+    console.error("Error uploading photo:", e);
+    return null;
+  }
+};
+
+export const getWeeklyPhotos = async () => {
+  // Note: Since we store photos as individual docs in a subcollection, this is a bit simpler
+  // to just return a mock list or implementing a collection fetch if we needed all of them.
+  // For this simple app, we might just fetch specific weeks or store them in a single array on the main user doc if we preferred.
+  // Let's stick to the main user doc for simplicity of fetching all at once?
+  // Actually, subcollection is cleaner. Let's implementing getting all photos.
+  // ... wait, 'getDocs' is needed. I'll just save it to the main user doc for easier loading list.
+
+  // REVISING STRATEGY: Save photo list to main user doc for easier single-fetch
+  return null;
+};
+
+export const savePhotoEntry = async (photoEntry: any) => {
+  const uid = getUserId();
+  if (!uid) return;
+
+  // We'll append to a "gallery" array in the main user doc
+  // This requires arrayUnion but I removed it earlier.
+  // Let's just read-modify-write the array for simplicity without complex imports
+  try {
+    const userRef = doc(db, "users", uid);
+    const snap = await getDoc(userRef);
+    let gallery = [];
+    if (snap.exists() && snap.data().gallery) {
+      gallery = snap.data().gallery;
+    }
+    gallery.push(photoEntry);
+    await setDoc(userRef, { gallery }, { merge: true });
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+export const getGallery = async () => {
+  const uid = getUserId();
+  if (!uid) return [];
+  try {
+    const userRef = doc(db, "users", uid);
+    const snap = await getDoc(userRef);
+    if (snap.exists() && snap.data().gallery) {
+      return snap.data().gallery;
+    }
+  } catch (e) {
+    console.error(e);
+  }
+  return [];
 };

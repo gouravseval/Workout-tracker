@@ -1,17 +1,36 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { initialUserProfile } from "../data/initialData";
 import { Camera, Weight, TrendingUp, Upload } from "lucide-react";
 
+import { uploadWeeklyPhoto, savePhotoEntry, getGallery } from "../services/db";
+
 export default function Progress() {
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Load photos from DB
+  useEffect(() => {
+    getGallery().then(data => {
+        if(data) setPhotos(data);
+    });
+  }, []);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Create a local URL for preview
-      const previewUrl = URL.createObjectURL(file);
-      setPhotos([...photos, previewUrl]);
+      // 1. Local Preview (Optional, we wait for upload now)
+      // const previewUrl = URL.createObjectURL(file);
+      
+      // 2. Upload to Cloud
+      const weekId = `week-${photos.length + 1}`;
+      const downloadURL = await uploadWeeklyPhoto(file, weekId);
+      
+      if (downloadURL) {
+          const newPhotoEntry = { url: downloadURL, date: new Date().toISOString(), label: weekId };
+          await savePhotoEntry(newPhotoEntry);
+          // Reload gallery to ensure consistency
+          getGallery().then(p => setPhotos(p));
+      }
       
       // Keep input value null to allow selecting same file again
       e.target.value = "";
@@ -59,6 +78,7 @@ export default function Progress() {
                 ref={fileInputRef} 
                 className="hidden" 
                 accept="image/*"
+                capture="user"
                 onChange={handleFileUpload}
              />
           </div>
@@ -74,11 +94,12 @@ export default function Progress() {
               ))}
 
               {/* Uploaded Photos Preview */}
-              {photos.map((url, idx) => (
+              {photos.map((photo, idx) => (
                   <div key={`new-${idx}`} className="glass-panel aspect-[3/4] relative overflow-hidden group">
-                      <img src={url} alt="Week Check-in" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                         <span className="text-white font-bold">New Upload</span>
+                      <img src={photo.url} alt="Week Check-in" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity p-2 text-center">
+                         <span className="text-white font-bold">{photo.label}</span>
+                         <span className="text-xs text-gray-300">{new Date(photo.date).toLocaleDateString()}</span>
                       </div>
                   </div>
               ))}

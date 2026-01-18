@@ -34,23 +34,10 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <WaterTracker />
         <CustomReminders />
         
-        {/* Quick Stats Placeholder */}
-        <div className="glass-panel p-4 md:p-6 flex flex-col justify-between">
-            <div>
-                <h3 className="text-gray-400 font-medium mb-1">Calories Consumed</h3>
-                <p className="text-2xl font-bold text-white">1,250 <span className="text-gray-500 text-lg">/ 2,200</span></p>
-            </div>
-            <div className="w-full bg-gray-800 h-2 rounded-full mt-4">
-                 <div className="bg-white h-full w-[55%] rounded-full"></div>
-            </div>
-            <div className="mt-4 text-sm text-gray-400">
-                <span className="text-white font-bold">55%</span> of daily goal
-            </div>
-        </div>
       </div>
     </div>
   );
