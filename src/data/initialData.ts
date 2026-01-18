@@ -11,7 +11,7 @@ export const initialUserProfile = {
     "Track weekly progress photos",
   ],
   dietType: "Pure Vegetarian",
-  workoutTime: "19:00", // 7:00 PM
+  workoutTime: "19:00", // 7:00 
   waterTarget: 3500, // ml
 };
 
